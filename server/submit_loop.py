@@ -5,7 +5,7 @@ import random
 import time
 from collections import defaultdict
 
-from server import app, database, reloader
+from server import app, database, health, reloader
 from server.models import Flag, FlagStatus, SubmitResult
 
 
@@ -54,6 +54,7 @@ def submit_flags(flags, config):
 
 def run_loop():
     app.logger.info('Starting submit loop')
+    health.mark_loop_started()
     with app.app_context():
         db = database.get(context_bound=False)
 
@@ -77,12 +78,21 @@ def run_loop():
             flags = get_fair_share(grouped_flags.values(), config['SUBMIT_FLAG_LIMIT'])
 
             app.logger.debug('Submitting %s flags (out of %s in queue)', len(flags), len(queued_flags))
-            results = submit_flags(flags, config)
+            try:
+                results = submit_flags(flags, config)
+                health.record_submit(submit_start_time, len(queued_flags), flags, results,
+                                     time.time() - submit_start_time)
+            except Exception as e:
+                health.record_submit_exception(submit_start_time, len(queued_flags), flags, e,
+                                               time.time() - submit_start_time)
+                raise
 
             rows = [(item.status.name, item.checksystem_response, item.flag) for item in results]
             db.executemany("UPDATE flags SET status = ?, checksystem_response = ? "
                            "WHERE flag = ?", rows)
             db.commit()
+        else:
+            health.mark_no_flags(len(queued_flags), time.time() - submit_start_time)
 
         submit_spent = time.time() - submit_start_time
         if config['SUBMIT_PERIOD'] > submit_spent:

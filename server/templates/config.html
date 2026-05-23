@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/static/favicon.png">
+
+    <title>SharLike Farm 1.0 - Конфиг</title>
+
+    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
+    <img class="logo" src="/static/img/dvteam_white.png">
+    <div class="navbar-brand">SharLike Farm 1.0</div>
+    <div class="navbar-nav ml-auto">
+        <a class="nav-item nav-link" href="/">Флаги</a>
+        <a class="nav-item nav-link" href="/stats">Статистика</a>
+        <a class="nav-item nav-link" href="/health">Состояние</a>
+        <a class="nav-item nav-link active" href="/config">Конфиг</a>
+        <a class="nav-item nav-link" href="/maintenance">Обслуживание</a>
+    </div>
+</nav>
+
+<div class="container-fluid page-shell">
+    {% if message %}
+    <div class="alert alert-success">{{ message }}</div>
+    {% endif %}
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <div class="card panel-card mb-4">
+        <div class="card-body">
+            <h4 class="card-title">Быстрые настройки</h4>
+            <form method="post">
+                <input type="hidden" name="mode" value="quick">
+
+                <div class="row mb-3">
+                    <div class="col-lg-6">
+                        <label for="teams-input">Команды</label>
+                        <textarea class="form-control form-control-sm config-teams-input"
+                                  id="teams-input" name="teams">{{ quick.teams }}</textarea>
+                        <label for="excluded-teams-input" class="mt-3">Исключить свою команду</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="excluded-teams-input" name="excluded_teams"
+                               value="{{ quick.excluded_teams }}"
+                               placeholder="Команда #3, 3, 192.168.176.3">
+                    </div>
+                    <div class="col-lg-6">
+                        <label for="flag-format-input">Формат флага</label>
+                        <input type="text" class="form-control form-control-sm mb-3"
+                               id="flag-format-input" name="flag_format"
+                               value="{{ quick.flag_format }}">
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label for="submit-limit-input">Лимит отправки</label>
+                                <input type="number" min="1" class="form-control form-control-sm"
+                                       id="submit-limit-input" name="submit_flag_limit"
+                                       value="{{ quick.submit_flag_limit }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="submit-period-input">Период отправки</label>
+                                <input type="number" min="1" class="form-control form-control-sm"
+                                       id="submit-period-input" name="submit_period"
+                                       value="{{ quick.submit_period }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="flag-lifetime-input">Время жизни флага</label>
+                                <input type="number" min="1" class="form-control form-control-sm"
+                                       id="flag-lifetime-input" name="flag_lifetime"
+                                       value="{{ quick.flag_lifetime }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="protocol-input">Протокол</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="protocol-input" name="system_protocol"
+                               value="{{ quick.system_protocol }}">
+                    </div>
+                    <div class="col-md-5">
+                        <label for="system-url-input">URL чекера</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="system-url-input" name="system_url"
+                               value="{{ quick.system_url }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="team-id-input">ID команды</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="team-id-input" name="team_id"
+                               value="{{ quick.team_id }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="server-username-input">Логин веба</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="server-username-input" name="server_username"
+                               value="{{ quick.server_username }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="server-password-input">Пароль веба</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="server-password-input" name="server_password"
+                               value="{{ quick.server_password }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="api-token-input">API-токен</label>
+                        <input type="text" class="form-control form-control-sm"
+                               id="api-token-input" name="api_token"
+                               value="{{ quick.api_token }}">
+                    </div>
+                </div>
+
+                <div class="custom-control custom-checkbox mb-3">
+                    <input type="checkbox" class="custom-control-input"
+                           id="api-auth-input" name="enable_api_auth"
+                           {% if quick.enable_api_auth %}checked{% endif %}>
+                    <label class="custom-control-label" for="api-auth-input">Включить API-авторизацию</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-sm">Сохранить быстрые настройки</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card panel-card mb-4">
+        <div class="card-body">
+            <h4 class="card-title">Полный config.py</h4>
+            <form method="post">
+                <input type="hidden" name="mode" value="raw">
+                <label for="config-source-input" class="text-muted">{{ config_path }}</label>
+                <textarea class="form-control form-control-sm config-source-input"
+                          id="config-source-input" name="config_source"
+                          spellcheck="false">{{ config_source }}</textarea>
+                <button type="submit" class="btn btn-primary btn-sm mt-3">Сохранить полный config.py</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -22,11 +22,24 @@ else:
 _init_started = False
 _init_lock = threading.RLock()
 
+BUSY_TIMEOUT_MS = 30000
+
 
 def _init(database):
     app.logger.info('Creating database schema')
     with app.open_resource(schema_path, 'r') as f:
         database.executescript(f.read())
+
+
+def _configure(database):
+    database.execute('PRAGMA busy_timeout = {}'.format(BUSY_TIMEOUT_MS))
+    database.execute('PRAGMA synchronous = NORMAL')
+    try:
+        journal_mode = database.execute('PRAGMA journal_mode = WAL').fetchone()[0]
+        if journal_mode.lower() != 'wal':
+            app.logger.warning('SQLite journal_mode is %s, not WAL', journal_mode)
+    except sqlite3.DatabaseError as e:
+        app.logger.warning('Failed to enable SQLite WAL mode: %s', e)
 
 
 def get(context_bound=True):
@@ -53,8 +66,9 @@ def get(context_bound=True):
         return g.database
 
     need_init = not os.path.exists(db_filename)
-    database = sqlite3.connect(db_filename)
+    database = sqlite3.connect(db_filename, timeout=BUSY_TIMEOUT_MS / 1000)
     database.row_factory = sqlite3.Row
+    _configure(database)
 
     if need_init:
         with _init_lock:

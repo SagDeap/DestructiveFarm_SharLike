@@ -366,7 +366,7 @@ def process_sploit_output(stream, args, team_name, flag_format, attack_no):
             line = line.decode(errors='replace')
             output_lines.append(line)
 
-            line_flags = set(flag_format.findall(line))
+            line_flags = set(flag_format.findall(line.rstrip('\r\n')))
             if line_flags:
                 flag_storage.add(line_flags, team_name)
                 instance_flags |= line_flags

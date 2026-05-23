@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/static/favicon.png">
+
+    <title>SharLike Farm 1.0 - Состояние</title>
+
+    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
+    <img class="logo" src="/static/img/dvteam_white.png">
+    <div class="navbar-brand">SharLike Farm 1.0</div>
+    <div class="navbar-nav ml-auto">
+        <a class="nav-item nav-link" href="/">Флаги</a>
+        <a class="nav-item nav-link" href="/stats">Статистика</a>
+        <a class="nav-item nav-link active" href="/health">Состояние</a>
+        <a class="nav-item nav-link" href="/config">Конфиг</a>
+        <a class="nav-item nav-link" href="/maintenance">Обслуживание</a>
+    </div>
+</nav>
+
+<div class="container-fluid page-shell">
+    <div class="row mb-3">
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card stats-card-total">
+                <div class="card-body">
+                    <h5 class="card-title">В очереди</h5>
+                    <div class="stats-value">{{ queued_count }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h5 class="card-title">Самый старый</h5>
+                    <div class="stats-value">{{ oldest_queued_age }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card status-card status-queued">
+                <div class="card-body">
+                    <h5 class="card-title">Скоро истекут</h5>
+                    <div class="stats-value">{{ expiring_soon }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h5 class="card-title">Последний тик</h5>
+                    <div class="stats-value">{{ last_tick_age }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-lg-5 mb-3">
+            <div class="card panel-card">
+                <div class="card-body">
+                    <h4 class="card-title">Цикл отправки</h4>
+                    <table class="table compact-table mb-0">
+                        <tbody>
+                        <tr>
+                            <th>Запущен</th>
+                            <td>
+                                {% if health.loop_started_at %}
+                                {{ health.loop_started_at|timestamp_to_datetime }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Последняя отправка</th>
+                            <td>
+                                {% if health.last_submit_finished_at %}
+                                {{ health.last_submit_finished_at|timestamp_to_datetime }}
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Длительность</th>
+                            <td>
+                                {% if health.last_submit_duration is not none %}
+                                {{ '%.2f'|format(health.last_submit_duration) }}s
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Отправлено в прошлый раз</th>
+                            <td>{{ health.last_submitted_count }} / {{ health.last_total_queued }}</td>
+                        </tr>
+                        <tr>
+                            <th>Ошибок подряд</th>
+                            <td>{{ health.consecutive_error_rounds }}</td>
+                        </tr>
+                        <tr>
+                            <th>Последняя ошибка</th>
+                            <td>{{ health.last_error or '-' }}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7 mb-3">
+            <div class="card panel-card">
+                <div class="card-body">
+                    <h4 class="card-title">Результат последней отправки</h4>
+                    <div class="mini-status-grid">
+                    {% for status, key in status_keys %}
+                        <div class="mini-status status-{{ key }}">
+                            <span>{{ status|status_label }}</span>
+                            <strong>{{ health.last_result_counts.get(status, 0) }}</strong>
+                        </div>
+                    {% endfor %}
+                    </div>
+                    <div class="health-note mt-3">
+                        Лимит: {{ config.SUBMIT_FLAG_LIMIT }} флагов каждые {{ config.SUBMIT_PERIOD }}s,
+                        жизнь флага: {{ config.FLAG_LIFETIME }}s.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card panel-card mb-4">
+        <div class="card-body">
+            <h4 class="card-title">Последние ответы чекера</h4>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                    <tr>
+                        <th scope="col">Время</th>
+                        <th scope="col">Статус</th>
+                        <th scope="col">Сплойт</th>
+                        <th scope="col">Команда</th>
+                        <th scope="col">Флаг</th>
+                        <th scope="col">Ответ</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for item in health.recent_responses %}
+                    <tr>
+                        <td>{{ item.time|timestamp_to_datetime }}</td>
+                        <td><span class="status-pill status-{{ item.status|lower }}">{{ item.status|status_label }}</span></td>
+                        <td>{{ item.sploit }}</td>
+                        <td>{{ item.team }}</td>
+                        <td class="mono-cell">{{ item.flag }}</td>
+                        <td>{{ item.response }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-muted">Ответов пока нет</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,4 +1,9 @@
 flags.sqlite
+flags.sqlite-shm
+flags.sqlite-wal
+server/config.py.*.bak
+server/config.py.tmp
+server/backups/
 
 .idea
 

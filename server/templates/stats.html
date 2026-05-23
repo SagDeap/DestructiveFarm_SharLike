@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/static/favicon.png">
+
+    <title>SharLike Farm 1.0 - Статистика</title>
+
+    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
+    <img class="logo" src="/static/img/dvteam_white.png">
+    <div class="navbar-brand">SharLike Farm 1.0</div>
+    <div class="navbar-nav ml-auto">
+        <a class="nav-item nav-link" href="/">Флаги</a>
+        <a class="nav-item nav-link active" href="/stats">Статистика</a>
+        <a class="nav-item nav-link" href="/health">Состояние</a>
+        <a class="nav-item nav-link" href="/config">Конфиг</a>
+        <a class="nav-item nav-link" href="/maintenance">Обслуживание</a>
+    </div>
+</nav>
+
+<div class="container-fluid page-shell">
+    <div class="row mb-3">
+        <div class="col-md-4 mb-3">
+            <div class="card stats-card stats-card-total">
+                <div class="card-body">
+                    <h5 class="card-title">Всего</h5>
+                    <div class="stats-value">{{ total_count }}</div>
+                </div>
+            </div>
+        </div>
+        {% for item in recent_counts %}
+        <div class="col-md-4 mb-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.label }}</h5>
+                    <div class="stats-value">{{ item.count }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="row mb-3">
+        {% for status, key in status_keys %}
+        <div class="col-md-3 col-6 mb-3">
+            <div class="card stats-card status-card status-{{ key }}">
+                <div class="card-body">
+                    <h6 class="card-title">{{ status|status_label }}</h6>
+                    <div class="stats-value">{{ status_counts[status] }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="row mb-3">
+        {% for item in recent_counts %}
+        <div class="col-md-6 mb-3">
+            <div class="card panel-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.label }} по статусам</h5>
+                    <div class="mini-status-grid">
+                    {% for status, key in status_keys %}
+                        <div class="mini-status status-{{ key }}">
+                            <span>{{ status|status_label }}</span>
+                            <strong>{{ item.statuses[status] }}</strong>
+                        </div>
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card panel-card">
+                <div class="card-body">
+                    <h4 class="card-title">По сплойтам</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover stats-table mb-0">
+                            <thead>
+                            <tr>
+                                <th scope="col">Сплойт</th>
+                                <th scope="col">Всего</th>
+                                {% for status, key in status_keys %}
+                                <th scope="col">{{ status|status_label }}</th>
+                                {% endfor %}
+                                <th scope="col">Принято</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in sploit_stats %}
+                            <tr>
+                                <td class="name-cell">{{ row.name }}</td>
+                                <td>{{ row.total }}</td>
+                                {% for status, key in status_keys %}
+                                <td>{{ row[key] }}</td>
+                                {% endfor %}
+                                <td>
+                                    {% if row.accept_rate is not none %}
+                                    {{ '%.1f'|format(row.accept_rate) }}%
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="{{ status_keys|length + 3 }}" class="text-muted">Пока нет данных</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 mb-4">
+            <div class="card panel-card">
+                <div class="card-body">
+                    <h4 class="card-title">По командам</h4>
+                    <div class="table-responsive">
+                        <table class="table table-hover stats-table mb-0">
+                            <thead>
+                            <tr>
+                                <th scope="col">Команда</th>
+                                <th scope="col">Всего</th>
+                                {% for status, key in status_keys %}
+                                <th scope="col">{{ status|status_label }}</th>
+                                {% endfor %}
+                                <th scope="col">Принято</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for row in team_stats %}
+                            <tr>
+                                <td class="name-cell">{{ row.name }}</td>
+                                <td>{{ row.total }}</td>
+                                {% for status, key in status_keys %}
+                                <td>{{ row[key] }}</td>
+                                {% endfor %}
+                                <td>
+                                    {% if row.accept_rate is not none %}
+                                    {{ '%.1f'|format(row.accept_rate) }}%
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="{{ status_keys|length + 3 }}" class="text-muted">Пока нет данных</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -16,6 +16,16 @@ function escapeHtml(text) {
     return $('<div>').text(text).html();
 }
 
+function statusLabel(status) {
+    var labels = {
+        QUEUED: 'В очереди',
+        SKIPPED: 'Пропущен',
+        ACCEPTED: 'Принят',
+        REJECTED: 'Отклонен'
+    };
+    return labels[status] || status;
+}
+
 function generateFlagTableRows(rows) {
     var html = '';
     rows.forEach(function (item) {
@@ -24,7 +34,7 @@ function generateFlagTableRows(rows) {
             item.team !== null ? item.team : '',
             item.flag,
             dateToString(new Date(item.time * 1000)),
-            item.status,
+            statusLabel(item.status),
             item.checksystem_response !== null ? item.checksystem_response : ''
         ];
 
@@ -44,7 +54,7 @@ function generatePaginator(totalCount, rowsPerPage, pageNumber) {
 
     var html = '';
     if (firstShown > 1)
-        html += '<li class="page-item"><a class="page-link" href="#" data-content="1">«</a></li>';
+        html += '<li class="page-item"><a class="page-link" href="#" data-content="1">&laquo;</a></li>';
 
     for (var i = firstShown; i <= lastShown; i++) {
         var extraClasses = (i === pageNumber ? "active" : "");
@@ -55,7 +65,7 @@ function generatePaginator(totalCount, rowsPerPage, pageNumber) {
 
     if (lastShown < totalPages)
         html += '<li class="page-item">' +
-            '<a class="page-link" href="#" data-content="' + totalPages + '">»</a>' +
+            '<a class="page-link" href="#" data-content="' + totalPages + '">&raquo;</a>' +
         '</li>';
     return html;
 }
@@ -76,7 +86,7 @@ function showFlags() {
     queryInProgress = true;
 
     $('.search-results').hide();
-    $('.query-status').html('Loading...').show();
+    $('.query-status').html('Загрузка...').show();
 
     $.post('/ui/show_flags', $('#show-flags-form').serialize())
         .done(function (response) {
@@ -96,7 +106,7 @@ function showFlags() {
             $('.search-results').show();
         })
         .fail(function () {
-            $('.query-status').html("Failed to load flags from the farm server");
+            $('.query-status').html("Не удалось получить флаги с сервера");
         })
         .always(function () {
             queryInProgress = false;
@@ -111,9 +121,9 @@ function postFlagsManual() {
     $.post('/ui/post_flags_manual', $('#post-flags-manual-form').serialize())
         .done(function () {
             var sploitSelect = $('#sploit-select');
-            if ($('#sploit-manual-option').empty())
-                sploitSelect.append($('<option id="sploit-manual-option">Manual</option>'));
-            sploitSelect.val('Manual');
+            if ($('#sploit-manual-option').length === 0)
+                sploitSelect.append($('<option id="sploit-manual-option">Вручную</option>'));
+            sploitSelect.val('Вручную');
 
             $('#team-select, #flag-input, #time-since-input, #time-until-input, ' +
               '#status-select, #checksystem-response-input').val('');
@@ -122,7 +132,7 @@ function postFlagsManual() {
             showFlags();
         })
         .fail(function () {
-            $('.query-status').html("Failed to post flags to the farm server");
+            $('.query-status').html("Не удалось отправить флаги из ручного ввода");
             queryInProgress = false;
         });
 }
