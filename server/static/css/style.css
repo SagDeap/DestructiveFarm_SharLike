@@ -47,7 +47,15 @@ a:hover {
     font-size: 19px;
     font-weight: 700;
     letter-spacing: 0;
-    padding: 15px;
+    margin-right: 0;
+    padding: 15px 15px 15px 4px;
+}
+
+.brand-lockup {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
 }
 
 .navbar-dark .navbar-nav .nav-link {
@@ -67,8 +75,40 @@ a:hover {
 }
 
 .logo {
+    width: 30px;
     height: 30px;
-    opacity: 0.92;
+    object-fit: cover;
+    opacity: 0.94;
+}
+
+.farm-logo {
+    border-radius: 7px;
+}
+
+.collab-mark {
+    color: var(--muted);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.avatar-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    outline: 1px solid transparent;
+    transition: transform 120ms ease, outline-color 120ms ease, opacity 120ms ease;
+}
+
+.avatar-link:hover {
+    opacity: 0.9;
+    outline-color: rgba(61, 220, 151, 0.45);
+    transform: translateY(-1px);
+}
+
+.avatar-logo {
+    border-radius: 999px;
 }
 
 .page-shell {
