@@ -11,8 +11,8 @@ CONFIG = {
     # Do not include your own team here.
 
     'TEAMS': {
-                 'Team #75': '176.12.75.75',
-                 'Team #76': '85.198.67.197',
+                 'Team #75': 'ip_here',
+                 'Team #76': 'ip_here',
              },
 
     'FLAG_FORMAT': '^c01d[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}[0-9]{8}$',
@@ -27,7 +27,7 @@ CONFIG = {
 
     'SYSTEM_PROTOCOL': 'ctf01d_http',
 
-    'SYSTEM_URL': 'http://176.12.75.75/flag',
+    'SYSTEM_URL': 'http://ip_here/flag',
 
     'TEAM_ID': 't2',
 
@@ -83,9 +83,9 @@ CONFIG = {
 
     # Password will be excluded from the config before sending it to farm clients.
 
-    'SERVER_USERNAME': 'SharLikeTeam',
+    'SERVER_USERNAME': 'Team',
 
-    'SERVER_PASSWORD': '1594826Zx_',
+    'SERVER_PASSWORD': '12345',
 
 
 
