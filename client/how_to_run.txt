@@ -1,0 +1,3 @@
+python start_sploit.py spl_example.py -u http://127.0.0.1:5000 -a sploit --attack-period 30
+019e5398-51c8-7bb2-942d-7d8c8c9773e8 - сессия кодекса по ферме
+codex resume 019e5398-51c8-7bb2-942d-7d8c8c9773e8
