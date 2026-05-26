@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="icon" href="/static/favicon.jpg">
+
+    <title>SharLike Farm 1.0 - {% block page_title %}{% endblock %}</title>
+
+    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+
+<body>
+
+{% set nav_links = [
+    ('/', 'Флаги'),
+    ('/stats', 'Статистика'),
+    ('/health', 'Состояние'),
+    ('/config', 'Конфиг'),
+    ('/maintenance', 'Обслуживание'),
+] %}
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
+    <div class="brand-lockup">
+        <img class="logo farm-logo" src="/static/favicon.jpg" alt="SharLike Farm">
+        <span class="collab-mark">&times;</span>
+        <a class="avatar-link" href="https://github.com/SagDeap" title="SagDeap GitHub">
+            <img class="logo avatar-logo" src="/static/icon.jpg" alt="SagDeap">
+        </a>
+        <div class="navbar-brand">SharLike Farm 1.0</div>
+    </div>
+    <div class="navbar-nav ml-auto">
+        {% for href, label in nav_links %}
+        <a class="nav-item nav-link {% if request.path == href %}active{% endif %}" href="{{ href }}">{{ label }}</a>
+        {% endfor %}
+    </div>
+</nav>
+
+<div id="loop-toast"
+     hx-get="/ui/loop_toast"
+     hx-trigger="load, every 5s"
+     hx-swap="innerHTML"></div>
+
+<div id="flag-modal"></div>
+
+<div class="container-fluid page-shell">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="/static/js/htmx.min.js"></script>
+<script defer src="/static/js/alpine.min.js"></script>
+<script>
+    window.closeFlagModal = function () {
+        var el = document.getElementById('flag-modal');
+        if (el) el.innerHTML = '';
+    };
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') window.closeFlagModal();
+    });
+</script>
+{% block scripts %}{% endblock %}
+
+</body>
+</html>

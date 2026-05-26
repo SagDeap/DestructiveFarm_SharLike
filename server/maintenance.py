@@ -121,3 +121,17 @@ def vacuum_database():
         db.execute('VACUUM')
     finally:
         db.close()
+
+
+def clear_database():
+    backup_path = create_database_backup()
+
+    db = database.get(context_bound=False)
+    try:
+        db.execute('DELETE FROM flags')
+        db.commit()
+        db.execute('VACUUM')
+    finally:
+        db.close()
+
+    return backup_path

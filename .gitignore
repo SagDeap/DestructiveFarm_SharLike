@@ -1,12 +1,13 @@
 flags.sqlite
 flags.sqlite-shm
 flags.sqlite-wal
+server/config.py
 server/config.py.*.bak
 server/config.py.tmp
 server/backups/
 
 .idea
-
+CLAUDE.md
 # Created by https://www.gitignore.io/api/python
 
 ### Python ###

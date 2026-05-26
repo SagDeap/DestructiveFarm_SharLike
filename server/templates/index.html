@@ -1,45 +1,32 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="/static/favicon.jpg">
+{% extends "_base.html" %}
 
-    <title>SharLike Farm 1.0 - Флаги</title>
+{% block page_title %}Флаги{% endblock %}
 
-    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-</head>
-
-<body>
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
-    <div class="brand-lockup">
-        <img class="logo farm-logo" src="/static/favicon.jpg" alt="SharLike Farm">
-        <span class="collab-mark">&times;</span>
-        <a class="avatar-link" href="https://github.com/SagDeap" title="SagDeap GitHub">
-            <img class="logo avatar-logo" src="/static/icon.jpg" alt="SagDeap">
-        </a>
-        <div class="navbar-brand">SharLike Farm 1.0</div>
+{% block content %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card panel-card sparkline-card"
+                 hx-get="/ui/sparkline_partial"
+                 hx-trigger="load, every 30s"
+                 hx-swap="innerHTML">
+                <div class="card-body">
+                    <span class="text-muted">Загрузка accept-rate…</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="navbar-nav ml-auto">
-        <a class="nav-item nav-link active" href="/">Флаги</a>
-        <a class="nav-item nav-link" href="/stats">Статистика</a>
-        <a class="nav-item nav-link" href="/health">Состояние</a>
-        <a class="nav-item nav-link" href="/config">Конфиг</a>
-        <a class="nav-item nav-link" href="/maintenance">Обслуживание</a>
-    </div>
-</nav>
 
-<div class="container-fluid page-shell">
     <div class="row mb-4">
-        <div class="col-lg-8">
+        <div class="col-lg-8 mb-3">
             <div class="card panel-card">
                 <div class="card-body">
                     <h4 class="card-title">Просмотр флагов</h4>
-                    <form id="show-flags-form">
+                    <form id="show-flags-form"
+                          hx-post="/ui/flags_partial"
+                          hx-target="#flags-results"
+                          hx-swap="innerHTML"
+                          hx-trigger="submit"
+                          onsubmit="document.getElementById('page-number').value = 1;">
                         <div class="row mb-2">
                             <div class="col-md-4">
                                 <label for="sploit-select">Сплойт</label>
@@ -96,16 +83,22 @@
                                 </select>
                             </div>
                             <div class="col-md-4">
-                                <label for="checksystem-response-input">
-                                    Ответ чекера
-                                </label>
+                                <label for="checksystem-response-input">Ответ чекера</label>
                                 <input type="text" class="form-control form-control-sm" id="checksystem-response-input"
                                        name="checksystem_response">
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="col-12">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
                                 <button type="submit" class="btn btn-primary btn-sm submit-btn">Показать</button>
+                            </div>
+                            <div class="col d-flex align-items-center" x-data="{ live: true }">
+                                <label class="live-toggle mb-0">
+                                    <input type="checkbox" x-model="live"
+                                           @change="window.setFlagsLive($event.target.checked)">
+                                    <span>Автообновление каждые 3s</span>
+                                </label>
+                                <span class="pulse-dot ml-2" :class="{ 'pulse-active': live }"></span>
                             </div>
                         </div>
                         <input type="hidden" value="1" id="page-number" name="page-number">
@@ -114,11 +107,14 @@
             </div>
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-lg-4 mb-3">
             <div class="card panel-card">
                 <div class="card-body">
                     <h4 class="card-title">Добавить флаги вручную</h4>
-                    <form id="post-flags-manual-form">
+                    <form id="post-flags-manual-form"
+                          hx-post="/ui/post_flags_manual"
+                          hx-swap="none"
+                          hx-on::after-request="if(event.detail.successful) this.reset();">
                         <label for="text-with-flags">
                             Текст с флагами
                             <small class="text-muted ml-2">формат: {{ flag_format }}</small>
@@ -131,37 +127,22 @@
         </div>
     </div>
 
-    <div class="mb-3 text-center query-status"></div>
-
-    <div class="search-results card panel-card" style="display: none;">
-        <div class="card-body">
-        <p class="result-count">Найдено флагов: <span class="total-count"></span></p>
-
-        <ul class="pagination pagination-sm"></ul>
-
-        <div class="table-responsive">
-        <table class="table table-hover mb-0">
-            <thead>
-            <tr>
-                <th scope="col">Сплойт</th>
-                <th scope="col">Команда</th>
-                <th scope="col">Флаг</th>
-                <th scope="col">Время</th>
-                <th scope="col">Статус</th>
-                <th scope="col">Ответ чекера</th>
-            </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        </div>
-
-        <ul class="pagination pagination-sm"></ul>
-        </div>
+    <div id="flags-results"
+         hx-post="/ui/flags_partial"
+         hx-trigger="load, every 3s [window.flagsLive], refreshFlags from:body"
+         hx-include="#show-flags-form"
+         hx-swap="innerHTML">
+        <div class="text-muted">Загрузка флагов…</div>
     </div>
-</div>
+{% endblock %}
 
-<script src="/static/js/jquery.min.js"></script>
-<script src="/static/js/ui.js"></script>
-
-</body>
-</html>
+{% block scripts %}
+<script>
+    window.flagsLive = true;
+    window.setFlagsLive = function (on) { window.flagsLive = !!on; };
+    window.setFlagsPage = function (page) {
+        document.getElementById('page-number').value = page;
+        htmx.trigger('#flags-results', 'refreshFlags');
+    };
+</script>
+{% endblock %}

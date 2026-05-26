@@ -28,6 +28,100 @@ def status_label(status):
     return STATUS_LABELS.get(str(status), str(status))
 
 
+SHORT_FALLBACK = {
+    FlagStatus.ACCEPTED.name: '✓',
+    FlagStatus.REJECTED.name: '✗',
+    FlagStatus.QUEUED.name: '…',
+    FlagStatus.SKIPPED.name: '—',
+}
+
+
+@app.template_filter('short_response')
+def short_response(response, status):
+    text = (response or '').strip()
+    if text:
+        match = re.match(r'(\d{3})\b', text)
+        if match:
+            return match.group(1)
+        first = text.split(None, 1)[0]
+        if len(first) <= 14:
+            return first
+        return first[:13] + '…'
+    return SHORT_FALLBACK.get(status, '?')
+
+
+PROTOCOL_DESCRIPTIONS = {
+    'ctf01d_http': lambda flag, c: {
+        'kind': 'HTTP',
+        'method': 'GET',
+        'target': '{}?teamid={}&flag={}'.format(c.get('SYSTEM_URL', '?'), c.get('TEAM_ID', '?'), flag),
+        'headers': {},
+        'body': None,
+        'note': 'Один HTTP-запрос на флаг. 200 = принят, 403 = отклонен.',
+    },
+    'ructf_http': lambda flag, c: {
+        'kind': 'HTTP',
+        'method': 'PUT',
+        'target': c.get('SYSTEM_URL', '?'),
+        'headers': {'X-Team-Token': c.get('SYSTEM_TOKEN', '?')},
+        'body': '[..., "{}", ...]'.format(flag),
+        'note': 'Все флаги пачкой одним JSON-запросом.',
+    },
+    'ructf_tcp': lambda flag, c: {
+        'kind': 'TCP',
+        'method': '',
+        'target': '{}:{}'.format(c.get('SYSTEM_HOST', '?'), c.get('SYSTEM_PORT', '?')),
+        'headers': {},
+        'body': '{}\\n'.format(flag),
+        'note': 'TCP-сессия. После greeting ферма пишет флаги построчно.',
+    },
+    'forcad_tcp': lambda flag, c: {
+        'kind': 'TCP',
+        'method': '',
+        'target': '{}:{}'.format(c.get('SYSTEM_HOST', '?'), c.get('SYSTEM_PORT', '?')),
+        'headers': {'TEAM_TOKEN': c.get('TEAM_TOKEN', '?')},
+        'body': '{}\\n'.format(flag),
+        'note': 'TCP. Сначала отдается TEAM_TOKEN, затем флаги построчно.',
+    },
+    'volgactf': lambda flag, c: {
+        'kind': 'SDK',
+        'method': 'attack(...)',
+        'target': 'themis.finals.attack.helper.Helper("{}")'.format(c.get('SYSTEM_HOST', '?')),
+        'headers': {},
+        'body': flag,
+        'note': 'Themis Helper SDK, флаги отправляются пачкой.',
+    },
+}
+
+
+def _describe_request(protocol, flag, config):
+    builder = PROTOCOL_DESCRIPTIONS.get(protocol)
+    if builder is None:
+        return {
+            'kind': '?', 'method': '', 'target': '', 'headers': {}, 'body': None,
+            'note': 'Описание для протокола "{}" не задано.'.format(protocol),
+        }
+    return builder(flag, config)
+
+
+@app.route('/ui/flag_details')
+@auth.auth_required
+def flag_details():
+    flag = request.args.get('flag', '')
+    if not flag:
+        return ('flag required', 400)
+
+    rows = database.query('SELECT * FROM flags WHERE flag = ?', (flag,))
+    if not rows:
+        return ('', 404)
+    row = rows[0]
+
+    config = reloader.get_config()
+    protocol = config.get('SYSTEM_PROTOCOL', '')
+    req = _describe_request(protocol, flag, config)
+    return render_template('_flag_details.html', row=row, req=req, protocol=protocol)
+
+
 @app.route('/')
 @auth.auth_required
 def index():
@@ -134,9 +228,7 @@ def stats():
                            team_stats=_group_stats('team'))
 
 
-@app.route('/health')
-@auth.auth_required
-def health_page():
+def _health_context():
     config = reloader.get_config()
     snapshot = health.snapshot()
     cur_time = round(time.time())
@@ -158,15 +250,50 @@ def health_page():
     if snapshot['last_tick_at'] is not None:
         last_tick_age = time.time() - snapshot['last_tick_at']
 
-    return render_template('health.html',
-                           config=config,
-                           status_keys=STATUS_KEYS,
-                           health=snapshot,
-                           queued_count=queued_count,
-                           oldest_queued_age=_format_age(oldest_queued_age),
-                           expiring_soon=expiring_soon,
-                           last_tick_age=_format_age(last_tick_age),
-                           now=time.time())
+    return {
+        'config': config,
+        'status_keys': STATUS_KEYS,
+        'health': snapshot,
+        'queued_count': queued_count,
+        'oldest_queued_age': _format_age(oldest_queued_age),
+        'expiring_soon': expiring_soon,
+        'last_tick_age': _format_age(last_tick_age),
+        'now': time.time(),
+    }
+
+
+@app.route('/health')
+@auth.auth_required
+def health_page():
+    return render_template('health.html', **_health_context())
+
+
+@app.route('/ui/health_partial')
+@auth.auth_required
+def health_partial():
+    return render_template('_health_live.html', **_health_context())
+
+
+@app.route('/ui/loop_toast')
+@auth.auth_required
+def loop_toast():
+    config = reloader.get_config()
+    snapshot = health.snapshot()
+    cur_time = time.time()
+
+    last_tick = snapshot.get('last_tick_at')
+    stale_threshold = max(15, config['SUBMIT_PERIOD'] * 4)
+    is_stale = last_tick is not None and (cur_time - last_tick) > stale_threshold
+    last_error = snapshot.get('last_error')
+
+    if not last_error and not is_stale:
+        return ''
+
+    return render_template('_loop_toast.html',
+                           last_error=last_error,
+                           is_stale=is_stale,
+                           tick_age=None if last_tick is None else cur_time - last_tick,
+                           consecutive_errors=snapshot.get('consecutive_error_rounds', 0))
 
 
 def _render_config_editor(config_source=None, quick_values=None, message=None, error=None):
@@ -245,6 +372,9 @@ def maintenance_page():
         elif action == 'backup_database':
             path = maintenance.create_database_backup()
             message = 'Бэкап БД создан: {}'.format(path)
+        elif action == 'clear_database':
+            path = maintenance.clear_database()
+            message = 'Таблица флагов очищена. Бэкап перед очисткой: {}'.format(path)
         elif action == 'restore_config':
             backup = request.form.get('backup', '')
             path = maintenance.restore_config_backup(backup)
@@ -284,27 +414,108 @@ def download_database_backup(filename):
     return _send_file(path, filename)
 
 
-@app.route('/ui/show_flags', methods=['POST'])
-@auth.auth_required
-def show_flags():
+RETRYABLE_STATUSES = {FlagStatus.SKIPPED.name, FlagStatus.REJECTED.name}
+
+
+def _flags_filters_from_form(form):
     conditions = []
     for column in ['sploit', 'status', 'team']:
-        value = request.form[column]
+        value = form.get(column, '')
         if value:
             conditions.append(('{} = ?'.format(column), value))
     for column in ['flag', 'checksystem_response']:
-        value = request.form[column]
+        value = form.get(column, '')
         if value:
             conditions.append(('INSTR(LOWER({}), ?)'.format(column), value.lower()))
     for param in ['time-since', 'time-until']:
-        value = request.form[param].strip()
-        if value:
+        value = form.get(param, '').strip()
+        if not value:
+            continue
+        try:
             timestamp = round(datetime.strptime(value, FORM_DATETIME_FORMAT).timestamp())
-            sign = '>=' if param == 'time-since' else '<='
-            conditions.append(('time {} ?'.format(sign), timestamp))
-    page_number = int(request.form['page-number'])
-    if page_number < 1:
-        raise ValueError('Invalid page-number')
+        except ValueError:
+            continue
+        sign = '>=' if param == 'time-since' else '<='
+        conditions.append(('time {} ?'.format(sign), timestamp))
+    return conditions
+
+
+def _build_pagination(total_count, page_number):
+    total_pages = max(1, (total_count + FLAGS_PER_PAGE - 1) // FLAGS_PER_PAGE)
+    page_number = max(1, min(page_number, total_pages))
+    first_shown = max(1, page_number - 3)
+    last_shown = min(total_pages, page_number + 3)
+
+    pages = []
+    if first_shown > 1:
+        pages.append({'label': '«', 'page': 1, 'active': False})
+    for i in range(first_shown, last_shown + 1):
+        pages.append({'label': str(i), 'page': i, 'active': i == page_number})
+    if last_shown < total_pages:
+        pages.append({'label': '»', 'page': total_pages, 'active': False})
+
+    return {
+        'pages': pages,
+        'page_number': page_number,
+        'total_pages': total_pages,
+    }
+
+
+SPARKLINE_WINDOW_MINUTES = 60
+
+
+def _sparkline_buckets():
+    cur_time = round(time.time())
+    bucket_now = cur_time // 60
+    since = (bucket_now - SPARKLINE_WINDOW_MINUTES + 1) * 60
+
+    rows = database.query(
+        "SELECT CAST(time / 60 AS INTEGER) AS bucket, "
+        "       SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS accepted, "
+        "       SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS rejected "
+        "FROM flags WHERE time >= ? GROUP BY bucket ORDER BY bucket",
+        (FlagStatus.ACCEPTED.name, FlagStatus.REJECTED.name, since))
+
+    by_bucket = {row['bucket']: row for row in rows}
+    buckets = []
+    total_accepted = 0
+    total_rejected = 0
+    for offset in range(SPARKLINE_WINDOW_MINUTES):
+        bucket = bucket_now - SPARKLINE_WINDOW_MINUTES + 1 + offset
+        row = by_bucket.get(bucket)
+        accepted = row['accepted'] if row else 0
+        rejected = row['rejected'] if row else 0
+        total_accepted += accepted
+        total_rejected += rejected
+        checked = accepted + rejected
+        rate = (accepted / checked * 100) if checked > 0 else None
+        buckets.append({'offset': offset, 'rate': rate, 'checked': checked})
+    return buckets, total_accepted, total_rejected
+
+
+@app.route('/ui/sparkline_partial')
+@auth.auth_required
+def sparkline_partial():
+    buckets, total_accepted, total_rejected = _sparkline_buckets()
+    total_checked = total_accepted + total_rejected
+    rate = (total_accepted / total_checked * 100) if total_checked > 0 else None
+    return render_template('_sparkline.html',
+                           buckets=buckets,
+                           total_accepted=total_accepted,
+                           total_rejected=total_rejected,
+                           total_checked=total_checked,
+                           accept_rate=rate,
+                           window_minutes=SPARKLINE_WINDOW_MINUTES)
+
+
+@app.route('/ui/flags_partial', methods=['POST'])
+@auth.auth_required
+def flags_partial():
+    conditions = _flags_filters_from_form(request.form)
+    try:
+        page_number = max(1, int(request.form.get('page-number', '1')))
+    except ValueError:
+        page_number = 1
 
     if conditions:
         chunks, values = list(zip(*conditions))
@@ -314,27 +525,46 @@ def show_flags():
         conditions_sql = ''
         conditions_args = []
 
+    total_count = database.query(
+        'SELECT COUNT(*) AS c FROM flags ' + conditions_sql, conditions_args)[0]['c']
+    pagination = _build_pagination(total_count, page_number)
+
     sql = 'SELECT * FROM flags ' + conditions_sql + ' ORDER BY time DESC LIMIT ? OFFSET ?'
-    args = conditions_args + [FLAGS_PER_PAGE, FLAGS_PER_PAGE * (page_number - 1)]
+    args = conditions_args + [FLAGS_PER_PAGE, FLAGS_PER_PAGE * (pagination['page_number'] - 1)]
     flags = database.query(sql, args)
 
-    sql = 'SELECT COUNT(*) FROM flags ' + conditions_sql
-    args = conditions_args
-    total_count = database.query(sql, args)[0][0]
+    return render_template('_flags_table.html',
+                           flags=flags,
+                           total_count=total_count,
+                           pagination=pagination,
+                           retryable=RETRYABLE_STATUSES)
 
-    return jsonify({
-        'rows': [dict(item) for item in flags],
 
-        'rows_per_page': FLAGS_PER_PAGE,
-        'total_count': total_count,
-    })
+@app.route('/ui/retry_flag', methods=['POST'])
+@auth.auth_required
+def retry_flag():
+    flag = request.form.get('flag', '')
+    if not flag:
+        return ('', 400)
+
+    db = database.get()
+    db.execute(
+        "UPDATE flags SET status = ?, checksystem_response = NULL "
+        "WHERE flag = ? AND status IN ({})".format(','.join('?' * len(RETRYABLE_STATUSES))),
+        [FlagStatus.QUEUED.name, flag] + list(RETRYABLE_STATUSES))
+    db.commit()
+
+    response = app.make_response('')
+    response.headers['HX-Trigger'] = 'refreshFlags'
+    return response
 
 
 @app.route('/ui/post_flags_manual', methods=['POST'])
 @auth.auth_required
 def post_flags_manual():
     config = reloader.get_config()
-    flags = re.findall(config['FLAG_FORMAT'], request.form['text'])
+    pattern = re.compile(config['FLAG_FORMAT'].strip('^$'))
+    flags = pattern.findall(request.form['text'])
 
     cur_time = round(time.time())
     rows = [(item, 'Вручную', '*', cur_time, FlagStatus.QUEUED.name)
@@ -345,4 +575,6 @@ def post_flags_manual():
                    "VALUES (?, ?, ?, ?, ?)", rows)
     db.commit()
 
-    return ''
+    response = app.make_response('')
+    response.headers['HX-Trigger'] = 'refreshFlags'
+    return response

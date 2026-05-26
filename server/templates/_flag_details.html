@@ -1,0 +1,69 @@
+{% set response_text = row.checksystem_response or '' %}
+<div class="flag-modal-overlay" onclick="if(event.target===this) window.closeFlagModal();">
+    <div class="flag-modal" role="dialog">
+        <button type="button" class="flag-modal-close" title="Закрыть"
+                onclick="window.closeFlagModal();">×</button>
+
+        <div class="flag-modal-header">
+            <div class="flag-modal-title">Детали отправки</div>
+            <div class="flag-modal-flag mono-cell">{{ row.flag }}</div>
+        </div>
+
+        <div class="flag-modal-meta">
+            <div><span class="meta-label">Статус</span>
+                <span class="status-pill status-{{ row.status|lower }}">{{ row.status|status_label }}</span>
+            </div>
+            <div><span class="meta-label">Сплойт</span><span>{{ row.sploit }}</span></div>
+            <div><span class="meta-label">Команда</span><span>{{ row.team or '—' }}</span></div>
+            <div><span class="meta-label">Добавлен</span><span>{{ row.time|timestamp_to_datetime }}</span></div>
+        </div>
+
+        <div class="flag-modal-section">
+            <div class="section-title">Запрос на чексистему</div>
+            <div class="kv-list">
+                <div><span class="meta-label">Протокол</span>
+                    <span><code>{{ protocol }}</code> · {{ req.kind }}</span></div>
+                {% if req.method %}
+                <div><span class="meta-label">Метод</span><span><code>{{ req.method }}</code></span></div>
+                {% endif %}
+                {% if req.target %}
+                <div><span class="meta-label">Цель</span>
+                    <span class="mono-cell wrap">{{ req.target }}</span></div>
+                {% endif %}
+                {% if req.headers %}
+                <div><span class="meta-label">Headers</span>
+                    <div class="mono-cell wrap">
+                        {% for name, value in req.headers.items() %}{{ name }}: {{ value }}{% if not loop.last %}<br>{% endif %}{% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if req.body %}
+                <div><span class="meta-label">Body</span>
+                    <pre class="modal-pre">{{ req.body }}</pre></div>
+                {% endif %}
+            </div>
+            {% if req.note %}
+            <div class="modal-note">{{ req.note }}</div>
+            {% endif %}
+        </div>
+
+        <div class="flag-modal-section">
+            <div class="section-title">Ответ чексистемы</div>
+            {% if response_text %}
+            <pre class="modal-pre">{{ response_text }}</pre>
+            {% else %}
+            <div class="modal-note">Ответа пока нет (флаг не отправлялся либо был skipped до отправки).</div>
+            {% endif %}
+        </div>
+
+        {% if row.status in ['SKIPPED', 'REJECTED'] %}
+        <div class="flag-modal-actions">
+            <button type="button" class="btn btn-secondary btn-sm"
+                    hx-post="/ui/retry_flag"
+                    hx-vals='{"flag": "{{ row.flag }}"}'
+                    hx-swap="none"
+                    onclick="window.closeFlagModal();">↻ Поставить в очередь заново</button>
+        </div>
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,20 @@
+{% set kind = 'stale' if is_stale and not last_error else 'error' %}
+<div class="loop-toast loop-toast-{{ kind }}">
+    <div class="loop-toast-icon">{% if kind == 'stale' %}…{% else %}!{% endif %}</div>
+    <div class="loop-toast-body">
+        {% if last_error %}
+        <div class="loop-toast-title">Submit-loop поймал ошибку</div>
+        <div class="loop-toast-detail">
+            {{ last_error }}
+            {% if consecutive_errors %}
+            <span class="loop-toast-count">×{{ consecutive_errors }}</span>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="loop-toast-title">Submit-loop молчит</div>
+        <div class="loop-toast-detail">
+            Последний тик был {{ '%.1f'|format(tick_age) }}s назад
+        </div>
+        {% endif %}
+    </div>
+</div>

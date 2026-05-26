@@ -1,39 +1,8 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="/static/favicon.jpg">
+{% extends "_base.html" %}
 
-    <title>SharLike Farm 1.0 - Обслуживание</title>
+{% block page_title %}Обслуживание{% endblock %}
 
-    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-</head>
-
-<body>
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
-    <div class="brand-lockup">
-        <img class="logo farm-logo" src="/static/favicon.jpg" alt="SharLike Farm">
-        <span class="collab-mark">&times;</span>
-        <a class="avatar-link" href="https://github.com/SagDeap" title="SagDeap GitHub">
-            <img class="logo avatar-logo" src="/static/icon.jpg" alt="SagDeap">
-        </a>
-        <div class="navbar-brand">SharLike Farm 1.0</div>
-    </div>
-    <div class="navbar-nav ml-auto">
-        <a class="nav-item nav-link" href="/">Флаги</a>
-        <a class="nav-item nav-link" href="/stats">Статистика</a>
-        <a class="nav-item nav-link" href="/health">Состояние</a>
-        <a class="nav-item nav-link" href="/config">Конфиг</a>
-        <a class="nav-item nav-link active" href="/maintenance">Обслуживание</a>
-    </div>
-</nav>
-
-<div class="container-fluid page-shell">
+{% block content %}
     {% if message %}
     <div class="alert alert-success">{{ message }}</div>
     {% endif %}
@@ -82,6 +51,12 @@
                     <form method="post" class="inline-form">
                         <input type="hidden" name="action" value="vacuum_database">
                         <button type="submit" class="btn btn-secondary btn-sm">Уплотнить БД</button>
+                    </form>
+
+                    <form method="post" class="inline-form"
+                          onsubmit="return confirm('Удалить все флаги из БД? Перед очисткой будет создан бэкап.');">
+                        <input type="hidden" name="action" value="clear_database">
+                        <button type="submit" class="btn btn-danger btn-sm">Очистить БД</button>
                     </form>
                 </div>
             </div>
@@ -189,7 +164,4 @@
             </div>
         </div>
     </div>
-</div>
-
-</body>
-</html>
+{% endblock %}

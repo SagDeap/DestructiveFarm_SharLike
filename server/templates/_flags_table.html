@@ -1,0 +1,75 @@
+{% macro paginator() %}
+{% if pagination.total_pages > 1 %}
+<ul class="pagination pagination-sm mb-0">
+    {% for item in pagination.pages %}
+    <li class="page-item {% if item.active %}active{% endif %}">
+        <button type="button" class="page-link"
+                onclick="window.setFlagsPage({{ item.page }})">{{ item.label }}</button>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endmacro %}
+
+<div class="card panel-card">
+    <div class="card-body">
+        <div class="flags-toolbar">
+            <p class="result-count mb-0">Найдено флагов: <span class="total-count">{{ total_count }}</span></p>
+            {{ paginator() }}
+        </div>
+
+        <div class="table-responsive mt-2">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th scope="col">Сплойт</th>
+                    <th scope="col">Команда</th>
+                    <th scope="col">Флаг</th>
+                    <th scope="col">Время</th>
+                    <th scope="col">Статус</th>
+                    <th scope="col">Ответ чекера</th>
+                    <th scope="col" class="actions-col"></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in flags %}
+                <tr>
+                    <td>{{ row.sploit }}</td>
+                    <td>{{ row.team or '' }}</td>
+                    <td class="mono-cell flag-cell">{{ row.flag }}</td>
+                    <td>{{ row.time|timestamp_to_datetime }}</td>
+                    <td><span class="status-pill status-{{ row.status|lower }}">{{ row.status|status_label }}</span></td>
+                    <td class="response-cell">
+                        <button type="button"
+                                class="response-chip response-chip-{{ row.status|lower }}"
+                                title="{{ row.checksystem_response or 'нет ответа' }}"
+                                hx-get="/ui/flag_details?flag={{ row.flag|urlencode }}"
+                                hx-target="#flag-modal"
+                                hx-swap="innerHTML">{{ row.checksystem_response | short_response(row.status) }}</button>
+                    </td>
+                    <td class="actions-col">
+                        {% if row.status in retryable %}
+                        <button type="button"
+                                class="btn btn-secondary btn-xs"
+                                title="Поставить заново в очередь"
+                                hx-post="/ui/retry_flag"
+                                hx-vals='{"flag": "{{ row.flag }}"}'
+                                hx-swap="none">↻</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-muted">Пока ничего не нашлось</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flags-toolbar mt-2">
+            <span></span>
+            {{ paginator() }}
+        </div>
+    </div>
+</div>

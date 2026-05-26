@@ -1,0 +1,55 @@
+{% set chart_w = 1000 %}
+{% set chart_h = 60 %}
+{% set bucket_w = chart_w / window_minutes %}
+
+<div class="card-body sparkline-body">
+    <div class="sparkline-meta">
+        <div>
+            <span class="sparkline-label">Accept-rate за {{ window_minutes }} мин</span>
+            <span class="sparkline-value">
+                {% if accept_rate is not none %}{{ '%.1f'|format(accept_rate) }}%{% else %}—{% endif %}
+            </span>
+        </div>
+        <div class="sparkline-totals">
+            <span class="totals-pill totals-accepted">+{{ total_accepted }}</span>
+            <span class="totals-pill totals-rejected">−{{ total_rejected }}</span>
+            <span class="totals-pill totals-checked">{{ total_checked }} проверено</span>
+        </div>
+    </div>
+
+    <svg class="sparkline-svg" viewBox="0 0 {{ chart_w }} {{ chart_h }}" preserveAspectRatio="none" aria-hidden="true">
+        <line x1="0" y1="{{ chart_h * 0.5 }}" x2="{{ chart_w }}" y2="{{ chart_h * 0.5 }}"
+              class="sparkline-baseline" />
+
+        {% set ns = namespace(d='', open=false) %}
+        {% for b in buckets %}
+            {% set x = b.offset * bucket_w + bucket_w / 2 %}
+            {% if b.rate is not none %}
+                {% set y = chart_h - (b.rate / 100) * chart_h %}
+                {% if ns.open %}
+                    {% set ns.d = ns.d + ' L' + ('%.2f'|format(x)) + ',' + ('%.2f'|format(y)) %}
+                {% else %}
+                    {% set ns.d = ns.d + ' M' + ('%.2f'|format(x)) + ',' + ('%.2f'|format(y)) %}
+                    {% set ns.open = true %}
+                {% endif %}
+            {% else %}
+                {% set ns.open = false %}
+            {% endif %}
+        {% endfor %}
+
+        {% if ns.d %}
+        <path d="{{ ns.d.strip() }}" class="sparkline-path" />
+        {% endif %}
+
+        {% for b in buckets %}
+            {% if b.rate is not none %}
+                {% set x = b.offset * bucket_w + bucket_w / 2 %}
+                {% set y = chart_h - (b.rate / 100) * chart_h %}
+                <circle cx="{{ '%.2f'|format(x) }}" cy="{{ '%.2f'|format(y) }}" r="2.2"
+                        class="sparkline-dot"
+                        data-rate="{{ '%.1f'|format(b.rate) }}"
+                        data-checked="{{ b.checked }}" />
+            {% endif %}
+        {% endfor %}
+    </svg>
+</div>

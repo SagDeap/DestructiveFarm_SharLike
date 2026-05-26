@@ -1,39 +1,13 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-    <link rel="icon" href="/static/favicon.jpg">
+{% extends "_base.html" %}
 
-    <title>SharLike Farm 1.0 - Статистика</title>
+{% block page_title %}Статистика{% endblock %}
 
-    <link href="/static/css/bootswatch-flatly.css" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-</head>
-
-<body>
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark py-0">
-    <div class="brand-lockup">
-        <img class="logo farm-logo" src="/static/favicon.jpg" alt="SharLike Farm">
-        <span class="collab-mark">&times;</span>
-        <a class="avatar-link" href="https://github.com/SagDeap" title="SagDeap GitHub">
-            <img class="logo avatar-logo" src="/static/icon.jpg" alt="SagDeap">
-        </a>
-        <div class="navbar-brand">SharLike Farm 1.0</div>
-    </div>
-    <div class="navbar-nav ml-auto">
-        <a class="nav-item nav-link" href="/">Флаги</a>
-        <a class="nav-item nav-link active" href="/stats">Статистика</a>
-        <a class="nav-item nav-link" href="/health">Состояние</a>
-        <a class="nav-item nav-link" href="/config">Конфиг</a>
-        <a class="nav-item nav-link" href="/maintenance">Обслуживание</a>
-    </div>
-</nav>
-
-<div class="container-fluid page-shell">
+{% block content %}
+    <div id="stats-shell"
+         hx-get="/stats"
+         hx-trigger="every 10s"
+         hx-select="#stats-shell"
+         hx-swap="outerHTML">
     <div class="row mb-3">
         <div class="col-md-4 mb-3">
             <div class="card stats-card stats-card-total">
@@ -177,7 +151,5 @@
             </div>
         </div>
     </div>
-</div>
-
-</body>
-</html>
+    </div>
+{% endblock %}
